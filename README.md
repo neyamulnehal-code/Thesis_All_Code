@@ -13,8 +13,9 @@ Code behind the paper's experiments on the BRISC2025 four-class brain tumor MRI 
 | `05_stage2_federated_IID_FedAvg_FedProx_DP.ipynb` | Federated learning with 5 simulated hospitals on IID splits: FedAvg, FedProx, DP-FedAvg (DP-SGD, Opacus), a GroupNorm control, and post-hoc diagnostics. | Federated and DP results, IID; rerun without AMEF |
 | `06_stage2_federated_nonIID_FedAvg_FedProx_DP.ipynb` | The same pipeline on label-skewed splits (Dirichlet, alpha = 0.3), with per-client privacy accounting and an epsilon ablation (1, 3 and 20). | Federated and DP results, non-IID; rerun without AMEF |
 | `07_eval_checkpoint_analyses.ipynb` | Analyses that need predictions but no training: external accuracy on images that are and are not in BRISC2025 (bootstrap CIs), random-saliency baseline for deletion/insertion, weight-randomization check, attribution overlap with the BRISC2025 tumor masks, and a check of which preprocessing reproduces the reported accuracy. Loads the seed-42 checkpoint written by notebook 01, or retrains it once if none is attached. | Clean-subset external accuracy, random-saliency, randomization and mask-overlap tables |
+| `08_phash_neardup_and_param_counts.ipynb` | CPU-only checks: perceptual-hash (pHash) near-duplicates between the BRISC2025 test and training pools, inside the training pool, and between each external set and BRISC2025 (including those that are not byte-identical); four-class parameter counts of MobileNetV4-Small and RepViT-M1. | Leakage control; baseline parameter counts |
 
-Suggested reading order: 01, then 02-04 (additional reruns), then 05-06 (federated and DP), then 07.
+Suggested reading order: 01, then 02-04 (additional reruns), then 05-06 (federated and DP), then 07-08.
 
 ## Data
 
@@ -27,7 +28,7 @@ Datasets are not redistributed here. Follow each dataset's own license and terms
 ## Environment
 
 - Kaggle GPU session (CUDA, mixed precision).
-- Python 3 with PyTorch, torchvision, `timm`, `scikit-learn`, `scikit-image`, `thop` (notebooks 01-04, 07) and `lime`, Opacus (notebooks 05-06). Each notebook installs what it needs in its first cells.
+- Python 3 with PyTorch, torchvision, `timm`, `scikit-learn`, `scikit-image`, `thop` (notebooks 01-04, 07-08) and `lime`, Opacus (notebooks 05-06). Each notebook installs what it needs in its first cells.
 - Internet must be on for the first cell of each notebook (pip install).
 
 ## Reproducing
@@ -57,4 +58,4 @@ Code is released under the MIT License (see `LICENSE`).
 
 ## Contact
 
-Nehal, Khwaja Yunus Ali University (KYAU). neyamul.nehal@gmail.com
+Neyamul Islam, Khwaja Yunus Ali University (KYAU). neyamul.nehal@gmail.com
