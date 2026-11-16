@@ -37,12 +37,12 @@ Datasets are not redistributed here. Follow each dataset's own license and terms
 2. Upload a notebook, turn on a GPU, and run all cells in order.
 3. Results, figures and CSV/NPZ artifacts are written to `/kaggle/working`.
 
-Training recipe shared by notebooks 01-04: 50 epochs, early stopping (patience 10), CAWL+ loss, Mixup, EMA weights, flip test-time augmentation, fixed seeds.
+Training recipe shared by notebooks 01-04: see "Review-response revision" below (60 epochs, patience 8, CAWL+ loss, Mixup + CutMix, flip test-time augmentation chosen on validation).
 
 Notes on runtime:
-- Notebooks 02 and 03 train each baseline for up to 50 epochs. They save results after every model and skip finished models, so they can be split across sessions by editing `RUN_MODELS` and setting `RESUME_DIR`.
-- Notebook 04 defaults to seeds 42, 13 and 77 and runs the removal arms (18 runs). For a quicker check set `SEED_LIST = [42]` and `RUN_REMOVAL_ARMS = False`.
-- Notebooks 05 and 06 run 50 communication rounds with 2 local epochs per client. `USE_AMEF = False` in both, so the federated runs use the same preprocessing as the centralized notebook.
+- Notebooks 02 and 03 train each baseline for up to 60 epochs (early stopping, patience 8). They save results after every model and skip finished models, so they can be split across sessions by editing `RUN_MODELS`, `SEED_LIST` and setting `RESUME_DIR` to a folder holding `baseline_results.csv` and `baseline_predictions.npz`. `TIME_BUDGET_H` (11 h) stops new runs before the 12 h Kaggle limit.
+- Notebook 04 defaults to seeds 42, 13 and 77 and runs 15 arms (full model, plain backbone, branch/fusion/attention removals, MS-CA-ECA parts, loss terms, lesion head): 45 runs. For a quicker check set `SEED_LIST = [42]`. It resumes from `plain_backbone_results.csv` and `plain_backbone_predictions.npz` through `RESUME_DIR`.
+- Notebooks 05 and 06 run 60 communication rounds with 2 local epochs per client at seeds 42, 13 and 77. Each finished federated run is saved to `/kaggle/working/fl_cache` as a `.pt` file. The notebooks stop at `TIME_BUDGET_H` (10.5 h) with a message; upload the `.pt` files as a Kaggle dataset, attach it, set `FL_RESUME_DIR` (and `EXPECT_RESUMED_RUNS` to the number of saved runs) and run again. Full 05 takes about 24 runs, full 06 about 27, over 2-3 sessions each. `USE_AMEF = False` in both.
 
 ## Reproducibility notes
 
@@ -59,3 +59,22 @@ Code is released under the MIT License (see `LICENSE`).
 ## Contact
 
 Neyamul Islam, Khwaja Yunus Ali University (KYAU). neyamul.nehal@gmail.com
+
+
+## Review-response revision (SMGF_Net_7 setup)
+
+Notebooks 01-07 share one setup, the profile "final" of the SMGF_Net_7 notebook: 288 px aspect-preserving resize, robust normalisation, lesion-guided SMGF-Net + MS-CA-ECA,
+Mixup + CutMix, source-balanced sampling, near-duplicate cleaning (thumbnail correlation 0.98) and a grouped 10 % validation split, 60 epochs, early-stopping patience 8
+counted from epoch 30, checkpoint selection on validation loss. The federated notebooks (05/06) use the same preprocessing, cleaning and model (lesion head off: clients have
+no masks) with their own client optimiser.
+
+Run order: 08 (pHash pairs and threshold calibration) -> 01 -> 07 (with `ab_final_seed42.pth` attached as a Kaggle dataset or after 01) -> 02/03/04 (seeds 42,13,77,7,2024 and 101..505) -> 05/06 -> 09
+(paired tests across seeds, Holm correction, McNemar, minimum detectable effect).
+
+- Frozen recipe (`frozen_recipe.json`) and a validation-only choice of the inference mode (flip-TTA vs single pass); every run saves `<run>_predictions.npz`.
+- 01: before/after preprocessing figure, 10-seed resumable multi-seed run with t-intervals and MDE, matched vs unmatched accuracy, bounded temperature fit, temperature scaling on unmatched external subsets (fitted T, 1, 0.438), `XAI_LARGE` sample sizes.
+- 05/06: 60 rounds, 3 seeds (42, 13, 77), centralised hyper-parameters, GroupNorm FedAvg/FedProx for all seeds, convergence diagnostic, DP tuning on 12-round proxy runs (batches larger than the smallest client's data are skipped), clipping-only and centralised controls (centralised DP-SGD uses a physical batch of 48 to fit GPU memory), one table `dp_consolidated_table.csv`. 06 adds an epsilon ablation (1, 3, 8, 20). `RUN_MU_SWEEP`, `DP_RUN_SECOND_CONFIG` and `DP_TUNED_EXTRA_EPS` are off by default to save GPU time.
+- 08: nearest training image for every test image, pair inspection, pHash threshold calibration (false-positive rate and detection of edited copies), external-set overlap counts, parameter counts. Runs on CPU.
+- 09: aggregation, no training. Attach `multiseed_results.csv` (01), `baseline_results.csv` + `baseline_predictions.npz` (02/03) and `plain_backbone_results.csv` + `plain_backbone_predictions.npz` (04); the most complete copy of each is used and the log prints its row count.
+- 07: checkpoint accuracy check, matched/unmatched test accuracy, temperature scaling on unmatched external subsets, mask alignment overlay with a perfect-map control, larger XAI samples including errors.
+- All nine notebooks have been run on Kaggle in this setup. Results are summarised in the review-response report; the stated limits are federated runs at a fixed 60 rounds (most not converged), a single-seed DP study, and ablation differences below the minimum detectable effect at three seeds.
